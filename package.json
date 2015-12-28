@@ -1,0 +1,36 @@
+{
+  "name": "keboola-ex-itunes-extractor",
+  "version": "2.0.0",
+  "description": "Keboola Extractor for iTunes Connect",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm install mocha -g && mocha test/paramsTest.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blueskydigital/keboola-ex-itunes-connect.git"
+  },
+  "keywords": [
+    "ITunes",
+    "AutoIngestion",
+    "Docker"
+  ],
+  "author": "Radek Tomasek, BlueSky.pro",
+  "license": "MIT",
+  "homepage": "https://github.com/blueskydigital/keboola-ex-itunes-connect",
+  "dependencies": {
+    "apple-autoingestion": "^0.1.1",
+    "commander": "^2.8.1",
+    "crypto": "0.0.3",
+    "fast-csv": "^0.6.0",
+    "is-there": "^4.0.0",
+    "jsonfile": "^2.2.3",
+    "lodash": "^3.10.0",
+    "moment": "^2.10.3",
+    "nconf": "^0.7.1",
+    "q": "^1.4.1",
+    "rimraf": "^2.4.4",
+    "temp": "^0.8.3",
+    "twix": "^0.6.4"
+  }
+}
