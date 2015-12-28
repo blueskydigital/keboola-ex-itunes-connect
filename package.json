@@ -16,7 +16,7 @@
     "Docker"
   ],
   "author": "Radek Tomasek, BlueSky.pro",
-  "license": "MIT",
+  "license": "ISC",
   "homepage": "https://github.com/blueskydigital/keboola-ex-itunes-connect",
   "dependencies": {
     "apple-autoingestion": "^0.1.1",
