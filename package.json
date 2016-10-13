@@ -11,26 +11,31 @@
     "url": "git+https://github.com/blueskydigital/keboola-ex-itunes-connect.git"
   },
   "keywords": [
-    "ITunes",
-    "AutoIngestion",
+    "ITunes Connect",
+    "Reporter API",
     "Docker"
   ],
-  "author": "Radek Tomasek, BlueSky.pro",
+  "author": "Radek Tomasek <radek.tomasek@gmail.com>",
   "license": "ISC",
   "homepage": "https://github.com/blueskydigital/keboola-ex-itunes-connect",
   "dependencies": {
-    "apple-autoingestion": "^0.1.1",
-    "commander": "^2.8.1",
+    "babel-polyfill": "^6.16.0",
+    "commander": "^2.9.0",
     "crypto": "0.0.3",
-    "fast-csv": "^0.6.0",
-    "is-there": "^4.0.0",
-    "jsonfile": "^2.2.3",
-    "lodash": "^3.10.0",
-    "moment": "^2.10.3",
-    "nconf": "^0.7.1",
-    "q": "^1.4.1",
-    "rimraf": "^2.4.4",
-    "temp": "^0.8.3",
-    "twix": "^0.6.4"
+    "fast-csv": "^2.3.0",
+    "is-there": "^4.3.6",
+    "itc-reporter": "^1.0.3",
+    "jsonfile": "^2.4.0",
+    "lodash": "^4.16.4",
+    "moment": "^2.15.1",
+    "nconf": "^0.8.4",
+    "twix": "^1.1.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.16.0",
+    "babel-core": "^6.17.0",
+    "babel-loader": "^6.2.5",
+    "babel-preset-es2015": "^6.16.0",
+    "babel-preset-stage-0": "^6.16.0"
   }
 }
