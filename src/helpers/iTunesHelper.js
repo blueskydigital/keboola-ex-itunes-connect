@@ -1,10 +1,21 @@
 import fs from 'fs';
+import csv from 'fast-csv';
 import zlib from 'zlib';
 import path from 'path';
-import { capitalize, flatten } from 'lodash';
-import { Sales, Finance } from 'itc-reporter';
+import crypto from 'crypto';
+import {
+  Sales,
+  Finance
+} from 'itc-reporter';
+import {
+  flatten,
+  includes,
+  camelCase,
+  capitalize
+} from 'lodash';
 import {
   END_TYPE,
+  DATA_TYPE,
   ERROR_TYPE,
   RESPONSE_TYPE,
   DATASET_EMPTY,
@@ -93,10 +104,56 @@ export function extractReports(sourceFile, destinationFile) {
     const readStream = fs.createReadStream(sourceFile);
     const writeStream = fs.createWriteStream(destinationFile);
     readStream
-    readStream
       .pipe(gunzip)
       .pipe(writeStream)
         .on(ERROR_TYPE, error => reject(error))
         .on(END_TYPE, () => resolve(destinationFile));
   });
+}
+
+/**
+ * This function update files, add hash which is going to be a primary key and store the file in the new location
+ */
+export function transformFilesByAddingPrimaryKey(sourceDir, destinationDir, fileName, keyArray) {
+  return new Promise((resolve, reject) => {
+    let counter = 0;
+    const csvStream = csv.createWriteStream({ headers: true });
+    const readStream = fs.createReadStream(path.join(sourceDir, fileName));
+    const writeStream = fs.createWriteStream(path.join(destinationDir, fileName), { encoding: "utf8" });
+    csv
+      .fromStream(readStream, { headers: true, delimiter: '\t' })
+      .transform(obj => {
+        counter++
+        return combineDataWithKeys(obj, keyArray, counter);
+      })
+      .pipe(csvStream)
+      .pipe(writeStream)
+      .on(ERROR_TYPE, error => reject(error))
+      .on(END_TYPE, () => resolve(fileName));
+  });
+}
+
+/**
+ * This function combines the data with the keys.
+ */
+export function combineDataWithKeys(data, keys, counter) {
+  return Object.keys(data)
+    .reduce((previous, current) => {
+      return Object.assign(previous, { [ camelCase(current) ]: data[ current ].trim() });
+    }, { id: generatePrimaryKey( data, keys, counter ) });
+}
+
+/**
+ * This function generates hash based on the data and specified keys.
+ */
+export function generatePrimaryKey(data, keys, counter) {
+  const keyObject = Object.keys(data)
+    .reduce((previous, current) => {
+      if (includes(keys, current)) {
+        return { id: `${previous['id']} ${data[current]}` };
+      } else {
+        return previous;
+      }
+    }, { id: counter });
+  return crypto.createHash('md5').update(keyObject.id).digest('hex');
 }
