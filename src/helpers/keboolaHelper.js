@@ -1,8 +1,10 @@
 'use strict';
 import nconf from 'nconf';
 import {
+  uniq,
   isEmpty,
   isArray,
+  flatten,
   includes,
   isUndefined
 } from 'lodash';
@@ -11,6 +13,7 @@ import {
   REPORT_MODE,
   MOMENT_PERIOD,
   REPORT_SUB_TYPE,
+  DEFAULT_YEAR_MASK,
   REPORT_SALES_TYPE,
   DEFAULT_DATE_MASK,
   REPORT_FINANCIAL_TYPE
@@ -18,7 +21,7 @@ import {
 import twix from 'twix';
 import moment from 'moment';
 import isThere from 'is-there';
-
+import { periodsList } from './fiscalCalendarHelper';
 
 /**
  * This function simply reads the config and parse the input JSON object.
@@ -111,12 +114,18 @@ export function parseConfiguration(configObject) {
     if (moment(endDate, DEFAULT_DATE_MASK).diff(maximalDate) > 0) {
       reject(`Parameter endDate ${endDate} is bigger than maximal allowed date value ${maximalDate}! Please check out the documentation for more information.`);
     }
+    // Generate some dates for earnings data
+    const currentYear = moment().format(DEFAULT_YEAR_MASK);
+    const nextYear = moment().add(1, 'years').format(DEFAULT_YEAR_MASK);
     // This generates the array of dates.
     const dates = generateDateArray(startDate, endDate);
+    // This is for fiscal dimensions.
+    const periods = uniq(flatten(periodsList(currentYear, nextYear, dates)));
 
     resolve({
       dates,
       userId,
+      periods,
       vendors,
       password,
       mode: REPORT_MODE,

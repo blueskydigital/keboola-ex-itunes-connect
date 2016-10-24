@@ -38,12 +38,14 @@ import {
       mode,
       dates,
       userId,
+      periods,
       vendors,
       password,
       dateType,
       reportType,
       reportSubType
     } = await parseConfiguration(getConfig(path.join(command.data, CONFIG_FILE)));
+
     // Prepares table out directory where the files are going to be stored.
     const tmpDir = await createTmpDirectory();
     const tableOutDir = path.join(command.data, DEFAULT_TABLES_OUT_DIR);

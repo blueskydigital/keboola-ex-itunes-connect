@@ -25,9 +25,11 @@ export const EARNINGS_KEYS = [
   "Apple Identifier", "Product Type Identifier",
   "Title", "Country Of Sale", "Customer Currency"
 ];
+export const INITIAL_PERIOD = 9;
 export const DATASET_EMPTY = 'DATASET_EMPTY';
 export const DATASET_DOWNLOADED = 'DATASET_DOWNLOADED';
 export const DEFAULT_DATE_MASK = 'YYYYMMDD';
+export const DEFAULT_YEAR_MASK = 'YYYY';
 export const MOMENT_PERIOD = 'days';
 export const RESPONSE_TYPE = 'response';
 export const DATA_TYPE = 'data';
