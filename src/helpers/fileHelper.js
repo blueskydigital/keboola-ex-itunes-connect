@@ -5,7 +5,7 @@ import tmp from 'tmp';
  */
 export function createTmpDirectory() {
   return new Promise((resolve, reject) => {
-    tmp.file((error, path, descriptor, callback) => {
+    tmp.dir((error, path, cleanupCallback) => {
       if (error) {
         reject(error);
       } else {

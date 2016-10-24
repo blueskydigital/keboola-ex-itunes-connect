@@ -8,6 +8,7 @@ import {
   Finance
 } from 'itc-reporter';
 import {
+  size,
   flatten,
   includes,
   camelCase,
@@ -70,7 +71,9 @@ export function downloadReports(reporter, options, outputDirectory) {
 export function uncompressReportFiles(files, state) {
   return files
     .filter(file => file.state === state)
-    .map(file => extractReports(file.compressedFileName, file.fileName));
+    .map(file => {
+      return extractReports(file.compressedFileName, file.file, file.fileName);
+    });
 }
 
 /**
@@ -79,14 +82,17 @@ export function uncompressReportFiles(files, state) {
 export function getReport(reporter, options, outputDirectory) {
   return new Promise((resolve, reject) => {
     const readingStream = reporter.getReport(options);
-    const fileName = path.join(outputDirectory, `${options.vendorNumber}_${options.date}.txt`);
-    const compressedFileName = `${fileName}.gz`;
+    const fileName = `${options.vendorNumber}_${options.date}.txt`;
+    const file = path.join(outputDirectory, fileName);
+    const compressedFileName = `${file}.gz`;
     const writingStream = fs.createWriteStream(compressedFileName);
     readingStream.on(RESPONSE_TYPE, response => {
-      if (response.statusCode === 200) {
-        resolve({ state: DATASET_DOWNLOADED, fileName, compressedFileName });
-      } else if (response.statusCode === 404) {
-        resolve({ state: DATASET_EMPTY, fileName, compressedFileName });
+      if (response.headers.exitcode && parseInt(response.headers.exitcode) === 1) {
+        resolve({ state: DATASET_EMPTY, file, fileName, compressedFileName });
+      } else if (response.statusCode === 200) {
+        resolve({ state: DATASET_DOWNLOADED, file, fileName, compressedFileName });
+      } else if (response.statusCode === 401 || response.statusCode === 404) {
+        resolve({ state: DATASET_EMPTY, file, fileName, compressedFileName });
       } else {
         reject(`Problem with data download of ${fileName}, error: ${response.statusCode}`);
       }
@@ -98,16 +104,25 @@ export function getReport(reporter, options, outputDirectory) {
 /**
  * This function extracts the gzipped files and get the actual text files
  */
-export function extractReports(sourceFile, destinationFile) {
+export function extractReports(sourceFile, destinationFile, fileName) {
   return new Promise((resolve, reject) => {
-    const gunzip = zlib.createGunzip();
     const readStream = fs.createReadStream(sourceFile);
     const writeStream = fs.createWriteStream(destinationFile);
     readStream
-      .pipe(gunzip)
-      .pipe(writeStream)
-        .on(ERROR_TYPE, error => reject(error))
-        .on(END_TYPE, () => resolve(destinationFile));
+      .on(ERROR_TYPE, error => reject(error))
+      .on(END_TYPE, () => resolve(fileName))
+      .pipe(zlib.createGunzip())
+      .pipe(writeStream);
+  });
+}
+
+/**
+ * This function reads files in source directory and transfer them into destination directory.
+ * It also adds some primary key information.
+ */
+export function transferFilesFromSourceToDestination(sourceDir, destinationDir, files, keyArray) {
+  return files.map(file => {
+    return transformFilesByAddingPrimaryKey(sourceDir, destinationDir, file, keyArray);
   });
 }
 
@@ -126,10 +141,10 @@ export function transformFilesByAddingPrimaryKey(sourceDir, destinationDir, file
         counter++
         return combineDataWithKeys(obj, keyArray, counter);
       })
-      .pipe(csvStream)
-      .pipe(writeStream)
       .on(ERROR_TYPE, error => reject(error))
-      .on(END_TYPE, () => resolve(fileName));
+      .on(END_TYPE, () => resolve(fileName))
+      .pipe(csvStream)
+      .pipe(writeStream);
   });
 }
 

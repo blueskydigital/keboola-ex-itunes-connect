@@ -2,14 +2,9 @@ import path from 'path';
 import rimraf from 'rimraf-promise';
 import command from './helpers/cliHelper';
 import {
-  SALES_KEYS,
-  CONFIG_FILE,
-  REPORT_MODE,
-  DATASET_DOWNLOADED,
-  DEFAULT_TABLES_IN_DIR,
-  DEFAULT_TABLES_OUT_DIR
-} from './constants';
-import { capitalize } from 'lodash';
+  size,
+  capitalize
+} from 'lodash';
 import {
   createTmpDirectory
 } from './helpers/fileHelper';
@@ -18,12 +13,19 @@ import {
   parseConfiguration
 } from './helpers/keboolaHelper';
 import {
+  SALES_KEYS,
+  CONFIG_FILE,
+  DATASET_DOWNLOADED,
+  DEFAULT_TABLES_IN_DIR,
+  DEFAULT_TABLES_OUT_DIR
+} from './constants';
+import {
   extractReports,
   downloadReports,
   iTunesConnectInit,
   uncompressReportFiles,
   generateDownloadParameters,
-  transformFilesByAddingPrimaryKey
+  transferFilesFromSourceToDestination
 } from './helpers/iTunesHelper';
 
 /**
@@ -50,8 +52,10 @@ import {
     const compressedFiles = await Promise.all(downloadReports(reporter, options, tmpDir));
     const files = await Promise.all(uncompressReportFiles(compressedFiles, DATASET_DOWNLOADED));
     // Check whether the input files exist (if some data was downloaded + written into the files).
-    const test = await transformFilesByAddingPrimaryKey(tableOutDir, tmpDir, '85674928_20161012.txt', SALES_KEYS);
-
+    if (size(files) > 0) {
+      const transferedFiles = await transferFilesFromSourceToDestination(tmpDir, tableOutDir, files, SALES_KEYS);
+      console.log(transferedFiles);
+    }
     // Cleaning
     const cleaning = await rimraf(tmpDir);
     console.log('Download completed');
