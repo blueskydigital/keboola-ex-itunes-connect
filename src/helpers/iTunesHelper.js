@@ -4,10 +4,6 @@ import zlib from 'zlib';
 import path from 'path';
 import crypto from 'crypto';
 import {
-  Sales,
-  Finance
-} from 'itc-reporter';
-import {
   size,
   flatten,
   includes,
@@ -15,11 +11,26 @@ import {
   capitalize
 } from 'lodash';
 import {
+  Sales,
+  Finance
+} from 'itc-reporter';
+import {
+  generateOutputName
+} from './keboolaHelper';
+import {
+  alignPeriod
+} from './fiscalCalendarHelper';
+import {
   END_TYPE,
   DATA_TYPE,
+  ENOTFOUND,
+  ECONNRESET,
   ERROR_TYPE,
+  SALES_KEYS,
   RESPONSE_TYPE,
   DATASET_EMPTY,
+  EARNINGS_KEYS,
+  CONNECTION_ERROR,
   REPORT_SALES_TYPE,
   DATASET_DOWNLOADED,
   REPORT_FINANCIAL_TYPE
@@ -37,9 +48,31 @@ export function iTunesConnectInit({ userId, password, mode, reportType }) {
 }
 
 /**
- * This function generates the parameters required for downloading of the reports
+ * This function creates params based on the report type.
  */
-export function generateDownloadParameters({ vendors, dates, reportSubType, dateType, reportType }) {
+export function generateReportParams({ vendors, regions, periods, dates, dateType, reportType, reportSubType }) {
+  if (reportType === REPORT_SALES_TYPE) {
+    return generateSalesReportParameters({ vendors, dates, reportSubType, dateType, reportType: capitalize(reportType) });
+  } else if (reportType === REPORT_FINANCIAL_TYPE) {
+    return generateFinancialReportParameters({ vendors, periods, regions, reportType: capitalize(reportType) });
+  }
+}
+
+/**
+ * This function generates the right keys based on the report type.
+ */
+export function getKeysBasedOnReportType(reportType) {
+  if (reportType === REPORT_SALES_TYPE) {
+    return SALES_KEYS;
+  } else if (reportType === REPORT_FINANCIAL_TYPE) {
+    return EARNINGS_KEYS;
+  }
+}
+
+/**
+ * This function generates the parameters required for downloading the sales reports.
+ */
+export function generateSalesReportParameters({ vendors, dates, reportSubType, dateType, reportType }) {
   return flatten(dates
     .reduce((previous, current) => {
       return [...previous, vendors
@@ -52,6 +85,37 @@ export function generateDownloadParameters({ vendors, dates, reportSubType, date
             vendorNumber: vendor
           }
         })];
+    }, []));
+}
+
+/**
+ * This function generates the parameters required for downloading the financial reports.
+ */
+export function generateFinancialReportParameters({ vendors, periods, regions, reportType }) {
+  return flatten(periods
+    .reduce((previous, current) => {
+      return [...previous, addPeriodIntoParamsObject(vendors, current, regions, reportType)];
+    }, []));
+};
+
+/**
+ * This function adds period into desired params.
+ */
+export function addPeriodIntoParamsObject(vendors, period, regions, reportType) {
+  return flatten(vendors
+    .reduce((previous, current) => {
+      return [...previous, regions
+        .map(regionCode => {
+          const { fiscalYear, fiscalPeriod } = alignPeriod(period);
+          return {
+            reportType,
+            regionCode,
+            fiscalYear,
+            fiscalPeriod,
+            vendorNumber: current
+          }
+        })
+      ];
     }, []));
 }
 
@@ -82,7 +146,7 @@ export function uncompressReportFiles(files, state) {
 export function getReport(reporter, options, outputDirectory) {
   return new Promise((resolve, reject) => {
     const readingStream = reporter.getReport(options);
-    const fileName = `${options.vendorNumber}_${options.date}.txt`;
+    const fileName = generateOutputName(options);
     const file = path.join(outputDirectory, fileName);
     const compressedFileName = `${file}.gz`;
     const writingStream = fs.createWriteStream(compressedFileName);
@@ -97,6 +161,8 @@ export function getReport(reporter, options, outputDirectory) {
         reject(`Problem with data download of ${fileName}, error: ${response.statusCode}`);
       }
     });
+    readingStream.on(ENOTFOUND, () => reject(CONNECTION_ERROR));
+    readingStream.on(ECONNRESET, () => reject(CONNECTION_ERROR));
     readingStream.pipe(writingStream);
   });
 }
@@ -120,16 +186,16 @@ export function extractReports(sourceFile, destinationFile, fileName) {
  * This function reads files in source directory and transfer them into destination directory.
  * It also adds some primary key information.
  */
-export function transferFilesFromSourceToDestination(sourceDir, destinationDir, files, keyArray) {
+export function transferFilesFromSourceToDestination(sourceDir, destinationDir, files, reportType, keyArray) {
   return files.map(file => {
-    return transformFilesByAddingPrimaryKey(sourceDir, destinationDir, file, keyArray);
+    return transformFilesByAddingPrimaryKey(sourceDir, destinationDir, file, reportType, keyArray);
   });
 }
 
 /**
  * This function update files, add hash which is going to be a primary key and store the file in the new location
  */
-export function transformFilesByAddingPrimaryKey(sourceDir, destinationDir, fileName, keyArray) {
+export function transformFilesByAddingPrimaryKey(sourceDir, destinationDir, fileName, reportType, keyArray) {
   return new Promise((resolve, reject) => {
     let counter = 0;
     const csvStream = csv.createWriteStream({ headers: true });
@@ -137,12 +203,21 @@ export function transformFilesByAddingPrimaryKey(sourceDir, destinationDir, file
     const writeStream = fs.createWriteStream(path.join(destinationDir, fileName), { encoding: "utf8" });
     csv
       .fromStream(readStream, { headers: true, delimiter: '\t' })
+      .validate(data => {
+        if (reportType.toLowerCase() === REPORT_FINANCIAL_TYPE) {
+          return data['startDate'].indexOf('Total') < 0;
+        } else {
+          return data;
+        }
+      })
       .transform(obj => {
         counter++
         return combineDataWithKeys(obj, keyArray, counter);
       })
       .on(ERROR_TYPE, error => reject(error))
-      .on(END_TYPE, () => resolve(fileName))
+      .on(END_TYPE, () => {
+        resolve(fileName)
+      })
       .pipe(csvStream)
       .pipe(writeStream);
   });

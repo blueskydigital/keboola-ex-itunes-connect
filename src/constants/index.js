@@ -5,8 +5,10 @@ export const DEFAULT_TABLES_IN_DIR = '/in/tables';
 export const DEFAULT_TABLES_OUT_DIR = '/out/tables';
 export const REPORT_SALES_TYPE = 'sales';
 export const REPORT_FINANCIAL_TYPE = 'financial';
+export const IS_INCREMENTAL = true;
 export const DATE_TYPE = 'Daily';
 export const REPORT_MODE = 'Robot.XML';
+export const PRIMARY_KEY = [ 'id' ];
 export const REPORT_SUB_TYPE = 'Summary';
 export const FINANCE_REGIONS = [
   "AE", "AU", "CA", "CH", "DK", "EU", "GB", "HK",
@@ -26,6 +28,8 @@ export const EARNINGS_KEYS = [
   "Title", "Country Of Sale", "Customer Currency"
 ];
 export const INITIAL_PERIOD = 9;
+export const ENOTFOUND = 'ENOTFOUND';
+export const ECONNRESET = 'ECONNRESET';
 export const DATASET_EMPTY = 'DATASET_EMPTY';
 export const DATASET_DOWNLOADED = 'DATASET_DOWNLOADED';
 export const DEFAULT_DATE_MASK = 'YYYYMMDD';
@@ -35,3 +39,4 @@ export const RESPONSE_TYPE = 'response';
 export const DATA_TYPE = 'data';
 export const ERROR_TYPE = 'error';
 export const END_TYPE = 'end';
+export const CONNECTION_ERROR = 'Problem with connection to iTunes Connect! Please try it again!';

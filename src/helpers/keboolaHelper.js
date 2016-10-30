@@ -1,5 +1,10 @@
 'use strict';
+import path from 'path';
+import twix from 'twix';
 import nconf from 'nconf';
+import moment from 'moment';
+import isThere from 'is-there';
+import jsonfile from 'jsonfile';
 import {
   uniq,
   isEmpty,
@@ -9,19 +14,19 @@ import {
   isUndefined
 } from 'lodash';
 import {
+  periodsList
+} from './fiscalCalendarHelper';
+import {
   DATE_TYPE,
   REPORT_MODE,
   MOMENT_PERIOD,
   REPORT_SUB_TYPE,
+  FINANCE_REGIONS,
   DEFAULT_YEAR_MASK,
   REPORT_SALES_TYPE,
   DEFAULT_DATE_MASK,
   REPORT_FINANCIAL_TYPE
 } from '../constants';
-import twix from 'twix';
-import moment from 'moment';
-import isThere from 'is-there';
-import { periodsList } from './fiscalCalendarHelper';
 
 /**
  * This function simply reads the config and parse the input JSON object.
@@ -49,6 +54,41 @@ function generateDateArray(dateFrom, dateTo) {
     outputArray.push(moment(range.next()._d).format(DEFAULT_DATE_MASK));
   }
   return outputArray;
+}
+
+/**
+ * This function generates file name for the output files.
+ */
+export function generateOutputName({ reportType, vendorNumber, regionCode, date, fiscalYear, fiscalPeriod }) {
+  if (reportType.toLowerCase() === REPORT_SALES_TYPE) {
+    return `${vendorNumber}_${date}.csv`;
+  } else if (reportType.toLowerCase() === REPORT_FINANCIAL_TYPE) {
+    return `${vendorNumber}_${regionCode}_${fiscalYear}-${fiscalPeriod}.csv`;
+  }
+}
+
+/**
+ * This function reads filenames and generate manifests for them.
+ */
+export function generateManifests(fileDirectory, fileNames, data) {
+  return fileNames.map(fileName => {
+    return createManifestFile(path.join(fileDirectory, `${fileName}.manifest`), data);
+  });
+}
+
+/**
+ * This function simply create a manifest file related to the output data
+ */
+export function createManifestFile(fileName, data) {
+  return new Promise((resolve, reject) => {
+    jsonfile.writeFile(fileName, data, {}, (error) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve('Manifest created!');
+      }
+    });
+  });
 }
 
 /**
@@ -92,7 +132,7 @@ export function parseConfiguration(configObject) {
 
     // Another important step is to set the date range properly.
     const maximalDate = moment.utc().subtract(1, MOMENT_PERIOD).format(DEFAULT_DATE_MASK);
-    const defaultStartDate = moment.utc().subtract(30, MOMENT_PERIOD).format(DEFAULT_DATE_MASK);
+    const defaultStartDate = moment.utc().subtract(2, MOMENT_PERIOD).format(DEFAULT_DATE_MASK);
     const startDate = isUndefined(configObject.get('parameters:startDate')) || isEmpty(configObject.get('parameters:startDate'))
       ? defaultStartDate
       : configObject.get('parameters:startDate');
@@ -121,7 +161,6 @@ export function parseConfiguration(configObject) {
     const dates = generateDateArray(startDate, endDate);
     // This is for fiscal dimensions.
     const periods = uniq(flatten(periodsList(currentYear, nextYear, dates)));
-
     resolve({
       dates,
       userId,
@@ -130,6 +169,7 @@ export function parseConfiguration(configObject) {
       password,
       mode: REPORT_MODE,
       dateType: DATE_TYPE,
+      regions: FINANCE_REGIONS,
       reportSubType: REPORT_SUB_TYPE,
       reportType: reportType.toLowerCase()
     });

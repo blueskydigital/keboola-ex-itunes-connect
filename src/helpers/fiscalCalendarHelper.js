@@ -167,9 +167,9 @@ export function alignPeriod(inputPeriod) {
   const periodArray = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
   const yearInteger = parseInt(first(inputPeriod.split('-')));
   const periodId = inputPeriod.split('-')[1];
-  const year = (parseInt(periodId) === 0)
+  const fiscalYear = (parseInt(periodId) === 0)
     ? yearInteger - 1
     : yearInteger;
-  const period = periodArray[ periodId ];
-  return { year, period };
+  const fiscalPeriod = periodArray[ periodId ];
+  return { fiscalYear, fiscalPeriod };
 }
