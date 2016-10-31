@@ -1,6 +1,7 @@
 import path from 'path';
 import rimraf from 'rimraf-promise';
 import command from './helpers/cliHelper';
+import Promise from 'bluebird';
 import {
   size,
   capitalize
