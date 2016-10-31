@@ -38,6 +38,7 @@ import {
  */
 (async() => {
   try {
+    console.log('Start: ');
     // Reading of the input configuration.
     const {
       mode,
