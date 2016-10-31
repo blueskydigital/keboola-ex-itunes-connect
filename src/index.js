@@ -57,14 +57,20 @@ import {
     const tableOutDir = path.join(command.data, DEFAULT_TABLES_OUT_DIR);
     const reporter = iTunesConnectInit({ userId, password, mode, reportType });
     const options = generateReportParams({ vendors, regions, periods, dates, dateType, reportType, reportSubType });
+    console.log('Options prepared: ', options);
     const compressedFiles = await Promise.all(downloadReports(reporter, options, tmpDir));
+    console.log('Compressed files: ', compressedFiles);
     const files = await Promise.all(uncompressReportFiles(compressedFiles, DATASET_DOWNLOADED));
+    console.log('Files: ', files);
     // Check whether the input files exist (if some data was downloaded + written into the files).
     if (size(files) > 0) {
       const transferedFiles = await transferFilesFromSourceToDestination(tmpDir, tableOutDir, files, reportType, getKeysBasedOnReportType(reportType));
+      console.log('Transfered files: ', transferedFiles);
       // We need to generate the manifests for the output files.
       const downloadedFiles = await readFilesFromDirectory(tableOutDir);
+      console.log('Downloaded files: ', downloadedFiles);
       const manifests = await Promise.all(generateManifests(tableOutDir, downloadedFiles, manifestData));
+      console.log('Manifests: ', manifests);
       console.log(`${size(manifests)} file(s) downloaded!`);
     }
     // Cleaning

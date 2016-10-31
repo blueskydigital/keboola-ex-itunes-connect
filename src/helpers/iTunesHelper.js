@@ -177,7 +177,10 @@ export function extractReports(sourceFile, destinationFile, fileName) {
     const writeStream = fs.createWriteStream(destinationFile);
     readStream
       .on(ERROR_TYPE, error => reject(error))
-      .on(END_TYPE, () => resolve(fileName))
+      .on(END_TYPE, () => {
+        console.log(`${fileName} downloaded!`);
+        resolve(fileName)
+      })
       .pipe(zlib.createGunzip())
       .pipe(writeStream);
   });
