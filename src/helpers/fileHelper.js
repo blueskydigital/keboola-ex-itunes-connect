@@ -1,5 +1,6 @@
 import fs from 'fs';
 import tmp from 'tmp';
+import Promise from 'bluebird';
 
 /**
  * This function creates a temp directory where the files are going to be downloaded.

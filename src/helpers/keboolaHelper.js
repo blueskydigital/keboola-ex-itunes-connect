@@ -5,6 +5,7 @@ import nconf from 'nconf';
 import moment from 'moment';
 import isThere from 'is-there';
 import jsonfile from 'jsonfile';
+import Promise from 'bluebird';
 import {
   uniq,
   isEmpty,

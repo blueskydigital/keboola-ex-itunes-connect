@@ -3,6 +3,7 @@ import csv from 'fast-csv';
 import zlib from 'zlib';
 import path from 'path';
 import crypto from 'crypto';
+import Promise from 'bluebird';
 import {
   size,
   flatten,
