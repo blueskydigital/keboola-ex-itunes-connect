@@ -173,8 +173,7 @@ export function parseConfiguration(configObject) {
       regions: FINANCE_REGIONS,
       reportSubType: REPORT_SUB_TYPE,
       reportType: reportType.toLowerCase(),
-      fileName: `${reportType.toLowerCase()}.csv`,
-      destination: `${DEFAULT_BUCKET}.${reportType.toLowerCase()}`
+      fileName: `${reportType.toLowerCase()}.csv`
     });
   });
 }
