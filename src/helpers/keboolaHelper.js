@@ -5,7 +5,6 @@ import nconf from 'nconf';
 import moment from 'moment';
 import isThere from 'is-there';
 import jsonfile from 'jsonfile';
-import Promise from 'bluebird';
 import {
   uniq,
   isEmpty,
@@ -21,6 +20,7 @@ import {
   DATE_TYPE,
   REPORT_MODE,
   MOMENT_PERIOD,
+  DEFAULT_BUCKET,
   REPORT_SUB_TYPE,
   FINANCE_REGIONS,
   DEFAULT_YEAR_MASK,
@@ -172,7 +172,9 @@ export function parseConfiguration(configObject) {
       dateType: DATE_TYPE,
       regions: FINANCE_REGIONS,
       reportSubType: REPORT_SUB_TYPE,
-      reportType: reportType.toLowerCase()
+      reportType: reportType.toLowerCase(),
+      fileName: `${reportType.toLowerCase()}.csv`,
+      destination: `${DEFAULT_BUCKET}.${reportType.toLowerCase()}`
     });
   });
 }

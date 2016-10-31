@@ -1,3 +1,4 @@
+'use strict';
 import moment from 'moment';
 import {
   first,

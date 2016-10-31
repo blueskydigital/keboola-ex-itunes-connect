@@ -39,4 +39,5 @@ export const RESPONSE_TYPE = 'response';
 export const DATA_TYPE = 'data';
 export const ERROR_TYPE = 'error';
 export const END_TYPE = 'end';
+export const DEFAULT_BUCKET = 'in.c-ex-itunes';
 export const CONNECTION_ERROR = 'Problem with connection to iTunes Connect! Please try it again!';

@@ -1,9 +1,9 @@
+'use strict';
 import fs from 'fs';
 import csv from 'fast-csv';
 import zlib from 'zlib';
 import path from 'path';
 import crypto from 'crypto';
-import Promise from 'bluebird';
 import {
   size,
   flatten,
@@ -190,21 +190,21 @@ export function extractReports(sourceFile, destinationFile, fileName) {
  * This function reads files in source directory and transfer them into destination directory.
  * It also adds some primary key information.
  */
-export function transferFilesFromSourceToDestination(sourceDir, destinationDir, files, reportType, keyArray) {
-  return files.map(file => {
-    return transformFilesByAddingPrimaryKey(sourceDir, destinationDir, file, reportType, keyArray);
+export function transferFilesFromSourceToDestination(sourceDir, destinationDir, files, destinationFile, reportType, keyArray) {
+  return files.map(sourceFile => {
+    return transformFilesByAddingPrimaryKey(sourceDir, sourceFile, destinationDir, destinationFile, reportType, keyArray);
   });
 }
 
 /**
  * This function update files, add hash which is going to be a primary key and store the file in the new location
  */
-export function transformFilesByAddingPrimaryKey(sourceDir, destinationDir, fileName, reportType, keyArray) {
+export function transformFilesByAddingPrimaryKey(sourceDir, sourceFile, destinationDir, destinationFile, reportType, keyArray) {
   return new Promise((resolve, reject) => {
     let counter = 0;
+    const readStream = fs.createReadStream(path.join(sourceDir, sourceFile));
     const csvStream = csv.createWriteStream({ headers: true });
-    const readStream = fs.createReadStream(path.join(sourceDir, fileName));
-    const writeStream = fs.createWriteStream(path.join(destinationDir, fileName), { encoding: "utf8" });
+    const writeStream = fs.createWriteStream(path.join(destinationDir, sourceFile), { encoding: "utf8" });
     csv
       .fromStream(readStream, { headers: true, delimiter: '\t' })
       .validate(data => {
@@ -220,7 +220,7 @@ export function transformFilesByAddingPrimaryKey(sourceDir, destinationDir, file
       })
       .on(ERROR_TYPE, error => reject(error))
       .on(END_TYPE, () => {
-        resolve(fileName)
+        resolve(sourceFile)
       })
       .pipe(csvStream)
       .pipe(writeStream);
