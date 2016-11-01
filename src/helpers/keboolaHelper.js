@@ -164,10 +164,12 @@ export function parseConfiguration(configObject) {
     const periods = uniq(flatten(periodsList(currentYear, nextYear, dates)));
     resolve({
       dates,
-      userId,
+      userId,      
+      endDate,
       periods,
       vendors,
       password,
+      startDate,
       mode: REPORT_MODE,
       dateType: DATE_TYPE,
       regions: FINANCE_REGIONS,

@@ -178,7 +178,6 @@ export function extractReports(sourceFile, destinationFile, fileName) {
     readStream
       .on(ERROR_TYPE, error => reject(error))
       .on(END_TYPE, () => {
-        console.log(`${fileName} downloaded!`);
         resolve(fileName)
       })
       .pipe(zlib.createGunzip())

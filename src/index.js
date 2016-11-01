@@ -7,6 +7,7 @@ import {
 } from 'lodash';
 import {
   removeTmpFiles,
+  createOutputFile,
   createTmpDirectory,
   mergeDownloadedFiles,
   readFilesFromDirectory
@@ -47,26 +48,31 @@ import {
       regions,
       periods,
       vendors,
+      endDate,
       fileName,
       password,
       dateType,
+      startDate,
       reportType,
       reportSubType
     } = await parseConfiguration(getConfig(path.join(command.data, CONFIG_FILE)));
     // Prepares table out directory where the files are going to be stored.
+    console.log(`Downloading data between ${startDate} and ${endDate}!`);
     const downloadDir = await createTmpDirectory();
     const tableOutDir = path.join(command.data, DEFAULT_TABLES_OUT_DIR);
     const reporter = iTunesConnectInit({ userId, password, mode, reportType });
     const options = generateReportParams({ vendors, regions, periods, dates, dateType, reportType, reportSubType });
     const compressedFiles = await Promise.all(downloadReports(reporter, options, downloadDir));
     const files = await Promise.all(uncompressReportFiles(compressedFiles, DATASET_DOWNLOADED));
+    console.log(`${size(files)} files downloaded!`);
     // Check whether the input files exist (if some data was downloaded + written into the files).
     if (size(files) > 0) {
       const transferedFiles = await transferFilesFromSourceToDestination(downloadDir, tableOutDir, files, fileName, reportType, getKeysBasedOnReportType(reportType));
       // We need to generate the manifests for the output files.
       const downloadedFiles = await readFilesFromDirectory(tableOutDir);
       // Merge files into singe one.
-      const merged = await mergeDownloadedFiles(tableOutDir, downloadedFiles, fileName);
+      const data = await Promise.all(mergeDownloadedFiles(tableOutDir, downloadedFiles));
+      const output = await createOutputFile(path.join(tableOutDir, fileName), data);
       // Remove tmp files.
       const removed = await removeTmpFiles(tableOutDir, downloadedFiles);
       // Create final manifest.
@@ -75,7 +81,7 @@ import {
     }
     // Cleaning.
     const cleaning = await rimraf(downloadDir);
-    console.log('Data downloaded!');
+    console.log('Extraction completed!');
     process.exit(0);
   } catch(error) {
     console.error(error);

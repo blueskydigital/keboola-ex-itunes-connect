@@ -6,7 +6,9 @@ import path from 'path';
 import isThere from 'is-there';
 import {
   END_TYPE,
-  ERROR_TYPE
+  DATA_TYPE,
+  ERROR_TYPE,
+  FINISH_TYPE
 } from '../constants';
 
 /**
@@ -42,26 +44,37 @@ export function readFilesFromDirectory(filesDirectory) {
 /**
  * This function reads the source files and merge them into single one.
  */
-export function mergeDownloadedFiles(sourceDirectory, inputFiles, outputFile) {
-  return inputFiles.map(file => generateOutputFile(sourceDirectory, file, outputFile));
+export function mergeDownloadedFiles(sourceDirectory, inputFiles) {
+  return inputFiles.map(file => generateOutputFile(sourceDirectory, file));
 }
 
 /**
  * This function simple read file and store content into a new one which is going to be uploaded into Keboola.
  */
-export function generateOutputFile(sourceDirectory, inputFile, outputFile) {
+export function generateOutputFile(sourceDir, sourceFile) {
   return new Promise((resolve, reject) => {
-    const sourceFile = path.join(sourceDirectory, inputFile);
-    const destinationFile = path.join(sourceDirectory, outputFile);
-    const headers = !isThere(destinationFile);
+    const readStream = fs.createReadStream(path.join(sourceDir, sourceFile));
+    let output = '';
     csv
-     .fromStream(fs.createReadStream(sourceFile), { headers: true })
-       .on(ERROR_TYPE, error => reject(error))
-       .on(END_TYPE, () => {
-         resolve(destinationFile);
-       })
-     .pipe(csv.createWriteStream({ headers }))
-     .pipe(fs.createWriteStream(destinationFile, {'flags': 'a'}, { encoding: "utf8" }));
+     .fromStream(readStream, { headers: true })
+     .on(DATA_TYPE, data => output = data )
+     .on(ERROR_TYPE, error => reject(error))
+     .on(END_TYPE, () => {
+       resolve(output);
+     });
+  });
+}
+
+/**
+ * This function just stores data to selected destination.
+ * Data is appending to a file, the first one needs to have a header.
+ */
+export function createOutputFile(fileName, data) {
+  return new Promise((resolve, reject) => {
+    csv
+      .writeToStream(fs.createWriteStream(fileName), data, { headers: true })
+      .on(ERROR_TYPE, () => reject('Problem with writing data into output!'))
+      .on(FINISH_TYPE, () => resolve(fileName));
   });
 }
 
