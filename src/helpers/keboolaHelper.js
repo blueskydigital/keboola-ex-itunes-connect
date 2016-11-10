@@ -6,6 +6,7 @@ import moment from 'moment';
 import isThere from 'is-there';
 import jsonfile from 'jsonfile';
 import {
+  size,
   uniq,
   isEmpty,
   isArray,
@@ -23,6 +24,7 @@ import {
   DEFAULT_BUCKET,
   REPORT_SUB_TYPE,
   FINANCE_REGIONS,
+  MAXIMUM_INTERVAL,
   DEFAULT_YEAR_MASK,
   REPORT_SALES_TYPE,
   DEFAULT_DATE_MASK,
@@ -66,15 +68,6 @@ export function generateOutputName({ reportType, vendorNumber, regionCode, date,
   } else if (reportType.toLowerCase() === REPORT_FINANCIAL_TYPE) {
     return `${vendorNumber}_${regionCode}_${fiscalYear}-${fiscalPeriod}.csv`;
   }
-}
-
-/**
- * This function reads filenames and generate manifests for them.
- */
-export function generateManifests(fileDirectory, fileNames, data) {
-  return fileNames.map(fileName => {
-    return createManifestFile(path.join(fileDirectory, `${fileName}.manifest`), data);
-  });
 }
 
 /**
@@ -160,11 +153,16 @@ export function parseConfiguration(configObject) {
     const nextYear = moment().add(1, 'years').format(DEFAULT_YEAR_MASK);
     // This generates the array of dates.
     const dates = generateDateArray(startDate, endDate);
+    if (reportType.toLowerCase() === REPORT_SALES_TYPE && size(dates) > MAXIMUM_INTERVAL) {
+      reject(`The selected interval is too big! Keep the date range lower than ${MAXIMUM_INTERVAL}!`);
+    }
+
     // This is for fiscal dimensions.
     const periods = uniq(flatten(periodsList(currentYear, nextYear, dates)));
+
     resolve({
       dates,
-      userId,      
+      userId,
       endDate,
       periods,
       vendors,

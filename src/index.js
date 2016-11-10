@@ -6,16 +6,14 @@ import {
   capitalize
 } from 'lodash';
 import {
-  removeTmpFiles,
-  createOutputFile,
   createTmpDirectory,
-  mergeDownloadedFiles,
   readFilesFromDirectory
 } from './helpers/fileHelper';
 import {
   getConfig,
   generateManifests,
-  parseConfiguration
+  parseConfiguration,
+  createManifestFile
 } from './helpers/keboolaHelper';
 import {
   PRIMARY_KEY,
@@ -29,6 +27,7 @@ import {
   extractReports,
   downloadReports,
   iTunesConnectInit,
+  getDownloadedReports,
   generateReportParams,
   uncompressReportFiles,
   getKeysBasedOnReportType,
@@ -61,26 +60,26 @@ import {
     const downloadDir = await createTmpDirectory();
     const tableOutDir = path.join(command.data, DEFAULT_TABLES_OUT_DIR);
     const reporter = iTunesConnectInit({ userId, password, mode, reportType });
-    const options = generateReportParams({ vendors, regions, periods, dates, dateType, reportType, reportSubType });
-    const compressedFiles = await Promise.all(downloadReports(reporter, options, downloadDir));
-    const files = await Promise.all(uncompressReportFiles(compressedFiles, DATASET_DOWNLOADED));
-    console.log(`${size(files)} files downloaded!`);
+    const options = generateReportParams({
+      vendors, regions, periods, dates, dateType, reportType, reportSubType
+    });
+    const reports = await Promise.all(downloadReports(reporter, options, downloadDir));
+    // We should read the content of the directory where the downloaded files are stored.
+    const compressedFiles = await readFilesFromDirectory(downloadDir);
+    const files = getDownloadedReports(
+      await Promise.all(uncompressReportFiles(downloadDir, compressedFiles))
+    );
     // Check whether the input files exist (if some data was downloaded + written into the files).
     if (size(files) > 0) {
       const transferedFiles = await transferFilesFromSourceToDestination(downloadDir, tableOutDir, files, fileName, reportType, getKeysBasedOnReportType(reportType));
-      // We need to generate the manifests for the output files.
-      const downloadedFiles = await readFilesFromDirectory(tableOutDir);
-      // Merge files into singe one.
-      const data = await Promise.all(mergeDownloadedFiles(tableOutDir, downloadedFiles));
-      const output = await createOutputFile(path.join(tableOutDir, fileName), data);
-      // Remove tmp files.
-      const removed = await removeTmpFiles(tableOutDir, downloadedFiles);
       // Create final manifest.
-      const manifestData = { incremental: IS_INCREMENTAL, primary_key: PRIMARY_KEY };
-      const manifests = await Promise.all(generateManifests(tableOutDir, [ fileName ], manifestData));
+      const manifest = await createManifestFile(
+        `${path.join(tableOutDir, fileName)}.manifest`,
+        { incremental: IS_INCREMENTAL, primary_key: PRIMARY_KEY }
+      );
     }
     // Cleaning.
-    const cleaning = await rimraf(downloadDir);
+    // const cleaning = await rimraf(downloadDir);
     console.log('Extraction completed!');
     process.exit(0);
   } catch(error) {

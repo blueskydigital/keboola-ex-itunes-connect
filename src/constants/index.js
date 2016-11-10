@@ -27,11 +27,12 @@ export const EARNINGS_KEYS = [
   "Apple Identifier", "Product Type Identifier",
   "Title", "Country Of Sale", "Customer Currency"
 ];
+export const MAXIMUM_INTERVAL = 60;
 export const INITIAL_PERIOD = 9;
 export const ENOTFOUND = 'ENOTFOUND';
 export const ECONNRESET = 'ECONNRESET';
+export const Z_DATA_ERROR = 'Z_DATA_ERROR';
 export const DATASET_EMPTY = 'DATASET_EMPTY';
-export const DATASET_DOWNLOADED = 'DATASET_DOWNLOADED';
 export const DEFAULT_DATE_MASK = 'YYYYMMDD';
 export const DEFAULT_YEAR_MASK = 'YYYY';
 export const MOMENT_PERIOD = 'days';

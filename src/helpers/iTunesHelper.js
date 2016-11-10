@@ -4,8 +4,11 @@ import csv from 'fast-csv';
 import zlib from 'zlib';
 import path from 'path';
 import crypto from 'crypto';
+import isThere from 'is-there';
+import Promise from 'bluebird';
 import {
   size,
+  last,
   flatten,
   includes,
   camelCase,
@@ -28,6 +31,7 @@ import {
   ECONNRESET,
   ERROR_TYPE,
   SALES_KEYS,
+  Z_DATA_ERROR,
   RESPONSE_TYPE,
   DATASET_EMPTY,
   EARNINGS_KEYS,
@@ -124,21 +128,13 @@ export function addPeriodIntoParamsObject(vendors, period, regions, reportType) 
  * This function reads the input parameters and generate download promises.
  */
 export function downloadReports(reporter, options, outputDirectory) {
-  return options
-    .map(params => getReport(reporter, params, outputDirectory));
-}
+  return options.map(params => {
+    return getReport(reporter, params, outputDirectory);
+  });
 
-/**
- * This function reads the downloaded files,
- * filter out the ones which don't contain any data
- * and extract the rest of them.
- */
-export function uncompressReportFiles(files, state) {
-  return files
-    .filter(file => file.state === state)
-    .map(file => {
-      return extractReports(file.compressedFileName, file.file, file.fileName);
-    });
+  // return Promise.each(options, params => {
+  //   return getReport(reporter, params, outputDirectory);
+  // });
 }
 
 /**
@@ -149,40 +145,76 @@ export function getReport(reporter, options, outputDirectory) {
     const readingStream = reporter.getReport(options);
     const fileName = generateOutputName(options);
     const file = path.join(outputDirectory, fileName);
-    const compressedFileName = `${file}.gz`;
-    const writingStream = fs.createWriteStream(compressedFileName);
-    readingStream.on(RESPONSE_TYPE, response => {
-      if (response.headers.exitcode && parseInt(response.headers.exitcode) === 1) {
-        resolve({ state: DATASET_EMPTY, file, fileName, compressedFileName });
-      } else if (response.statusCode === 200) {
-        resolve({ state: DATASET_DOWNLOADED, file, fileName, compressedFileName });
-      } else if (response.statusCode === 401 || response.statusCode === 404) {
-        resolve({ state: DATASET_EMPTY, file, fileName, compressedFileName });
-      } else {
-        reject(`Problem with data download of ${fileName}, error: ${response.statusCode}`);
-      }
-    });
-    readingStream.on(ENOTFOUND, () => reject(CONNECTION_ERROR));
-    readingStream.on(ECONNRESET, () => reject(CONNECTION_ERROR));
+    const writingStream = fs.createWriteStream(`${file}.gz`);
+    readingStream
+      .on(ERROR_TYPE, error => {
+        if (error.code === ENOTFOUND) {
+          resolve('File not found!');
+        } else if (error.code === ECONNRESET) {
+          reject(CONNECTION_ERROR);
+        } else {
+          reject(error);
+        }
+      })
+      .on(RESPONSE_TYPE, response => {
+        const { statusCode } = response;
+        if (statusCode === 200 || statusCode === 404) {
+          resolve(file);
+        }
+        reject(statusCode);
+      });
     readingStream.pipe(writingStream);
   });
 }
 
 /**
+ * This function reads the downloaded files,
+ * filter out the ones which don't contain any data
+ * and extract the rest of them.
+ */
+export function uncompressReportFiles(directory, files) {
+  return files
+    .map(file => {
+      return extractReports(path.join(directory, file));
+    });
+}
+
+/**
  * This function extracts the gzipped files and get the actual text files
  */
-export function extractReports(sourceFile, destinationFile, fileName) {
+export function extractReports(file) {
   return new Promise((resolve, reject) => {
-    const readStream = fs.createReadStream(sourceFile);
-    const writeStream = fs.createWriteStream(destinationFile);
-    readStream
-      .on(ERROR_TYPE, error => reject(error))
-      .on(END_TYPE, () => {
-        resolve(fileName)
-      })
-      .pipe(zlib.createGunzip())
-      .pipe(writeStream);
+    fs.readFile(file, (error, compressedFile) => {
+      if (error) {
+        reject(error);
+      }
+      zlib.gunzip(compressedFile, (error, data) => {
+        if (error) {
+          if (error.code === Z_DATA_ERROR) {
+            resolve(DATASET_EMPTY);
+          } else {
+            reject(error);
+          }
+        } else {
+          const outputFile = file.slice(0,-3);
+          fs.writeFile(outputFile, data, error => {
+            if (error) {
+              reject(error);
+            }
+            resolve(last(outputFile.split('/')));
+          });
+        }
+      });
+    });
   });
+}
+
+/**
+ * This function select the report which were actually extracted
+ * Existing files contain .csv in a file.
+ */
+export function getDownloadedReports(files) {
+  return files.filter(file => file.indexOf('.csv') > 0);
 }
 
 /**
@@ -190,7 +222,7 @@ export function extractReports(sourceFile, destinationFile, fileName) {
  * It also adds some primary key information.
  */
 export function transferFilesFromSourceToDestination(sourceDir, destinationDir, files, destinationFile, reportType, keyArray) {
-  return files.map(sourceFile => {
+  return Promise.each(files, sourceFile => {
     return transformFilesByAddingPrimaryKey(sourceDir, sourceFile, destinationDir, destinationFile, reportType, keyArray);
   });
 }
@@ -201,9 +233,11 @@ export function transferFilesFromSourceToDestination(sourceDir, destinationDir, 
 export function transformFilesByAddingPrimaryKey(sourceDir, sourceFile, destinationDir, destinationFile, reportType, keyArray) {
   return new Promise((resolve, reject) => {
     let counter = 0;
+    const outputFile = path.join(destinationDir, destinationFile);
+    const headers = isThere(outputFile);
     const readStream = fs.createReadStream(path.join(sourceDir, sourceFile));
     const csvStream = csv.createWriteStream({ headers: true });
-    const writeStream = fs.createWriteStream(path.join(destinationDir, sourceFile), { encoding: "utf8" });
+    const writeStream = fs.createWriteStream(outputFile, { flags: 'a', encoding: "utf8" });
     csv
       .fromStream(readStream, { headers: true, delimiter: '\t' })
       .validate(data => {
@@ -217,7 +251,9 @@ export function transformFilesByAddingPrimaryKey(sourceDir, sourceFile, destinat
         counter++
         return combineDataWithKeys(obj, keyArray, counter);
       })
-      .on(ERROR_TYPE, error => reject(error))
+      .on(ERROR_TYPE, error => {
+        reject(error)
+      })
       .on(END_TYPE, () => {
         resolve(sourceFile)
       })

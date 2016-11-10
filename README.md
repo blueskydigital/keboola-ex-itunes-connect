@@ -40,6 +40,6 @@ Downloading of Earnings data is very simple as well. The major improvement of th
       "#password": "iTunes Password, will be encrypted"
     }
 
-Note: Default date is today - 2. If you don't specify optional parameters ("startDate", "endDate"), it will be applied. Otherwise the range from both attributes ("startDate", "endDate") will be used (the date format is YYYYMMDD).
+Note: Default date is today - 2. If you don't specify optional parameters ("startDate", "endDate"), it will be applied. Otherwise the range from both attributes ("startDate", "endDate") will be used (the date format is YYYYMMDD). There is also a limitation for Sales dataset. You can download only 60 days in one run (this is a limitation of the extractor, not the iTunes Reporting API). If you want to download more data, just update the dates in the configuration accordingly. 
 
 See the [iTunes Connect official guide](https://help.apple.com/itc/contentreporterguide/#/itc0f2481229) for more information about the parameters.
