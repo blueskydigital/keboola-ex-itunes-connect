@@ -160,6 +160,8 @@ export function getReport(reporter, options, outputDirectory) {
         const { statusCode } = response;
         if (statusCode === 200 || statusCode === 404) {
           resolve(file);
+        } else if (statusCode === 401) {
+          resolve({});
         }
         reject(statusCode);
       });
