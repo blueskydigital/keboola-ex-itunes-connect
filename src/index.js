@@ -20,11 +20,9 @@ import {
   CONFIG_FILE,
   IS_INCREMENTAL,
   DATASET_DOWNLOADED,
-  DEFAULT_TABLES_IN_DIR,
   DEFAULT_TABLES_OUT_DIR
 } from './constants';
 import {
-  extractReports,
   downloadReports,
   iTunesConnectInit,
   getDownloadedReports,
