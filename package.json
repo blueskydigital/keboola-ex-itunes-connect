@@ -3,9 +3,7 @@
   "version": "2.0.0",
   "description": "Keboola Extractor for iTunes Connect",
   "main": "index.js",
-  "scripts": {
-    "test": "npm install mocha -g && mocha test/paramsTest.js"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/blueskydigital/keboola-ex-itunes-connect.git"
@@ -16,7 +14,7 @@
     "Docker"
   ],
   "author": "Radek Tomasek <radek.tomasek@gmail.com>",
-  "license": "ISC",
+  "license": "NONE",
   "homepage": "https://github.com/blueskydigital/keboola-ex-itunes-connect",
   "dependencies": {
     "babel-polyfill": "^6.16.0",
