@@ -77,7 +77,7 @@ import {
       );
     }
     // Cleaning.
-    // const cleaning = await rimraf(downloadDir);
+    const cleaning = await rimraf(downloadDir);
     console.log('Extraction completed!');
     process.exit(0);
   } catch(error) {

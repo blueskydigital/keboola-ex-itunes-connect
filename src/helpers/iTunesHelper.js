@@ -26,7 +26,6 @@ import {
 } from './fiscalCalendarHelper';
 import {
   END_TYPE,
-  DATA_TYPE,
   ENOTFOUND,
   ECONNRESET,
   ERROR_TYPE,
@@ -160,7 +159,7 @@ export function getReport(reporter, options, outputDirectory) {
         const { statusCode } = response;
         if (statusCode === 200 || statusCode === 404) {
           resolve(file);
-        } else if (statusCode === 400 || statusCode === 401) {
+        } else if (statusCode >= 400 && statusCode <= 403) {
           resolve({});
         }
         reject(statusCode);
